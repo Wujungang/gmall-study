@@ -43,6 +43,18 @@ public class ManageServiceImpl implements ManageService {
     @Autowired
     private SpuSaleAttrValueMapper spuSaleAttrValueMapper;
 
+    @Autowired
+    private SkuInfoMapper skuInfoMapper;
+
+    @Autowired
+    private SkuImageMapper skuImageMapper;
+
+    @Autowired
+    private SkuSaleAttrValueMapper skuSaleAttrValueMapper;
+
+    @Autowired
+    private SkuAttrValueMapper skuAttrValueMapper;
+
 
     @Override
     public List<BaseCatalog1> getCataLog1() {
@@ -73,11 +85,11 @@ public class ManageServiceImpl implements ManageService {
     @Override
     public List<BaseAttrInfo> getAttrList(String catalog3Id) {
 
-        BaseAttrInfo baseAttrInfo = new BaseAttrInfo();
+//        BaseAttrInfo baseAttrInfo = new BaseAttrInfo();
+//
+//        baseAttrInfo.setCatalog3Id(catalog3Id);
 
-        baseAttrInfo.setCatalog3Id(catalog3Id);
-
-        return baseAttrInfoMapper.select(baseAttrInfo);
+        return baseAttrInfoMapper.getBaseAttrInfoListByCatalog3Id(catalog3Id);
     }
 
     @Override
@@ -155,6 +167,56 @@ public class ManageServiceImpl implements ManageService {
                         spuSaleAttrValueMapper.insertSelective(spuSaleAttrValue);
                     }
                 }
+            }
+        }
+
+
+    }
+
+    @Override
+    public List<SpuImage> getSpuImageList(SpuImage spuImage) {
+        List<SpuImage> spuImageList = spuImageMapper.select(spuImage);
+        return spuImageList;
+    }
+
+    @Override
+    public List<SpuSaleAttr> getSpuSaleAttrList(String spuId) {
+        // 调用mapper
+        // 涉及两张表关联查询！
+        List<SpuSaleAttr> spuSaleAttrList = spuSaleAttrMapper.selectSpuSaleAttrList(spuId);
+        System.out.println(spuSaleAttrList);
+        return spuSaleAttrList;
+    }
+
+    @Override
+    @Transactional
+    public void saveSkuInfo(SkuInfo skuInfo) {
+        skuInfoMapper.insertSelective(skuInfo);
+
+        List<SkuImage> skuImageList = skuInfo.getSkuImageList();
+
+        if(skuImageList != null && skuImageList.size() > 0){
+            for (SkuImage skuImage:skuImageList) {
+                skuImage.setSkuId(skuInfo.getId());
+                skuImageMapper.insertSelective(skuImage);
+            }
+        }
+
+        List<SkuAttrValue> skuAttrValueList = skuInfo.getSkuAttrValueList();
+
+        if(skuAttrValueList != null && skuAttrValueList.size() > 0){
+            for(SkuAttrValue skuAttrValue:skuAttrValueList){
+                skuAttrValue.setSkuId(skuInfo.getId());
+                skuAttrValueMapper.insertSelective(skuAttrValue);
+            }
+        }
+
+        List<SkuSaleAttrValue> skuSaleAttrValueList = skuInfo.getSkuSaleAttrValueList();
+
+        if(skuSaleAttrValueList != null && skuSaleAttrValueList.size() > 0){
+            for (SkuSaleAttrValue skuSaleAttrValue: skuSaleAttrValueList) {
+                skuSaleAttrValue.setSkuId(skuInfo.getId());
+                skuSaleAttrValueMapper.insertSelective(skuSaleAttrValue);
             }
         }
 

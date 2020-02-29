@@ -32,4 +32,11 @@ public interface ManageService {
      * @param spuInfo
      */
     void saveSpuInfo(SpuInfo spuInfo);
+
+    List<SpuImage> getSpuImageList(SpuImage spuImage);
+
+    List<SpuSaleAttr> getSpuSaleAttrList(String spuId);
+
+
+    void saveSkuInfo(SkuInfo skuInfo);
 }
