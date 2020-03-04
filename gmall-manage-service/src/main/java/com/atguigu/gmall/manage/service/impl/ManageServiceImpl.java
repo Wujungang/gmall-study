@@ -1,13 +1,22 @@
 package com.atguigu.gmall.manage.service.impl;
 
 import com.alibaba.dubbo.config.annotation.Service;
+import com.alibaba.fastjson.JSON;
 import com.atguigu.gmall.bean.*;
+import com.atguigu.gmall.config.RedisUtil;
+import com.atguigu.gmall.manage.constant.ManageConst;
 import com.atguigu.gmall.manage.mapper.*;
 import com.atguigu.gmall0218.service.ManageService;
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import redis.clients.jedis.Jedis;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 @Service
@@ -54,6 +63,9 @@ public class ManageServiceImpl implements ManageService {
 
     @Autowired
     private SkuAttrValueMapper skuAttrValueMapper;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
 
     @Override
@@ -221,6 +233,134 @@ public class ManageServiceImpl implements ManageService {
         }
 
 
+    }
+
+    @Override
+    public SkuInfo getSkuInfo(String skuId) {
+
+        return getSkuInfoJedisson(skuId);
+    }
+
+    private SkuInfo getSkuInfoJedisson(String skuId) {
+        SkuInfo skuInfo = null;
+        Jedis jedis = null;
+        RLock lock = null;
+
+        try {
+            Config config = new Config();
+            config.useSingleServer().setAddress("redis://122.51.97.164:6379");
+
+            RedissonClient redissonClient = Redisson.create(config);
+
+            lock = redissonClient.getLock("yourLock");
+
+            lock.lock(10, TimeUnit.SECONDS);
+
+            jedis = redisUtil.getJedis();
+
+            String skuKey = ManageConst.SKUKEY_PREFIX + skuId + ManageConst.SKUKEY_SUFFIX;
+
+            if(jedis.exists(skuKey)){
+                String skuJson = jedis.get(skuKey);
+
+                skuInfo = JSON.parseObject(skuJson, SkuInfo.class);
+
+                return skuInfo;
+
+            }else{
+                skuInfo = getSkuInfoDB(skuId);
+
+                jedis.setex(skuKey,ManageConst.SKUKEY_TIMEOUT,JSON.toJSONString(skuInfo));
+                return skuInfo;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // 如何解决空指针？  if
+
+            if (jedis!=null){
+                jedis.close();
+            }
+            if (lock!=null){
+                lock.unlock();
+            }
+        }
+
+        return getSkuInfoDB(skuId);
+    }
+
+    private SkuInfo getSkuInfoJedis(String skuId) {
+        SkuInfo skuInfo = null;
+        Jedis jedis = null;
+
+        try {
+            jedis = redisUtil.getJedis();
+            String skuKey = ManageConst.SKUKEY_PREFIX + skuId + ManageConst.SKUKEY_SUFFIX;
+            String skuJson = jedis.get(skuKey);
+
+            if(skuJson == null || skuJson.length() == 0){
+                System.out.println("缓存中没有数据");
+                String skuLockKey = ManageConst.SKUKEY_PREFIX + skuId + ManageConst.SKULOCK_SUFFIX;
+                String lockKey = jedis.set(skuLockKey, "good", "NX", "PX", ManageConst.SKUKEY_TIMEOUT);
+
+                if("OK".equals(lockKey)){
+                    skuInfo = getSkuInfoDB(skuId);
+                    String skuRedisStr= JSON.toJSONString(skuInfo);
+                    jedis.setex(skuKey,ManageConst.SKUKEY_TIMEOUT,skuRedisStr);
+                    jedis.del(skuLockKey);
+                    return skuInfo;
+                }else{
+                    Thread.sleep(1000);
+                    return getSkuInfoDB(skuId);
+                }
+
+            }else{
+                skuInfo = JSON.parseObject(skuJson, SkuInfo.class);
+                return skuInfo;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if(jedis != null){
+                jedis.close();
+            }
+        }
+
+        return getSkuInfoDB(skuId);
+    }
+
+    private SkuInfo getSkuInfoDB(String skuId) {
+        // 直接将skuImageList 放入skuInfo 中！
+        SkuInfo skuInfo = skuInfoMapper.selectByPrimaryKey(skuId);
+        skuInfo.setSkuImageList(getSkuImageBySkuId(skuId));
+        // 查询平台属性值集合
+        SkuAttrValue skuAttrValue = new SkuAttrValue();
+        skuAttrValue.setSkuId(skuId);
+        skuInfo.setSkuAttrValueList(skuAttrValueMapper.select(skuAttrValue));
+        return skuInfo;
+    }
+
+    @Override
+    public List<SkuImage> getSkuImageBySkuId(String skuId) {
+        // select * from skuImnage where skuId = ?
+        SkuImage skuImage = new SkuImage();
+        skuImage.setSkuId(skuId);
+        List<SkuImage> skuImageList = skuImageMapper.select(skuImage);
+        return skuImageList;
+    }
+
+    @Override
+    public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(SkuInfo skuInfo) {
+        // 使用哪个mapper 调用查询接口！？ spuMaper ,skuMapper spuAttrValueMapper
+        return spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuInfo.getId(),skuInfo.getSpuId());
+    }
+
+    @Override
+    public List<SkuSaleAttrValue> getSkuSaleAttrValueListBySpu(String spuId) {
+        // 根据spuId 查询数据
+        return   skuSaleAttrValueMapper.selectSkuSaleAttrValueListBySpu(spuId);
     }
 
 
