@@ -7,6 +7,7 @@ import com.atguigu.gmall.config.RedisUtil;
 import com.atguigu.gmall.manage.constant.ManageConst;
 import com.atguigu.gmall.manage.mapper.*;
 import com.atguigu.gmall0218.service.ManageService;
+import org.apache.commons.lang3.StringUtils;
 import org.redisson.Redisson;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -94,14 +95,27 @@ public class ManageServiceImpl implements ManageService {
         return baseCatalog3Mapper.select(baseCatalog3);
     }
 
+
+
     @Override
     public List<BaseAttrInfo> getAttrList(String catalog3Id) {
-
-//        BaseAttrInfo baseAttrInfo = new BaseAttrInfo();
 //
-//        baseAttrInfo.setCatalog3Id(catalog3Id);
-
+////        BaseAttrInfo baseAttrInfo = new BaseAttrInfo();
+////
+////        baseAttrInfo.setCatalog3Id(catalog3Id);
+//
         return baseAttrInfoMapper.getBaseAttrInfoListByCatalog3Id(catalog3Id);
+    }
+
+    @Override
+    public List<BaseAttrInfo> getAttrList(List<String> attrValueIdList) {
+        // SELECT * FROM base_attr_info bai INNER JOIN base_attr_value bav ON bai.id = bav.attr_id WHERE bav.id in (80,82,83,13);
+        // 80,82,83,13 可以看做一个字符串！
+        // 将集合编程字符串
+        String valueIds = StringUtils.join(attrValueIdList.toArray(), ",");
+        System.out.println("valueIds:"+valueIds);
+        return   baseAttrInfoMapper.selectAttrInfoListByIds(valueIds);
+
     }
 
     @Override
@@ -238,7 +252,7 @@ public class ManageServiceImpl implements ManageService {
     @Override
     public SkuInfo getSkuInfo(String skuId) {
 
-        return getSkuInfoJedisson(skuId);
+        return getSkuInfoJedis(skuId);
     }
 
     private SkuInfo getSkuInfoJedisson(String skuId) {

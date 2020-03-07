@@ -57,10 +57,14 @@
 							</li>
 						</ul>
 						<ul class="header_ul_right">
-							<li style="border: 0;"><a href="http://passport.atguigu.com/index.html" class="aa" >你好，请登录</a></li>
+							<li style="border: 0;"><a href="http://passport.atguigu.com/index.html" class="aa" >
+								<span th:if="${nickName}!=null" th:text="${nickName}">
+											你好，请登录
+								</span>
+							</a></li>
 							<li><a href="http://passport.atguigu.com/index.html" style="color: red;">免费注册</a> |</li>
 							<li><a href="javascript:;" class="aa">我的订单</a> |</li>
- 
+
 						</ul>
 					</div>
 				</header>
@@ -80,7 +84,7 @@
 							<li class="nav_down_ul_1" style="width: 24%;float: left;"><a href="javascript:;">全部商品分类</a>
 
 							</li>
-							 
+
 						</ul>
 					</div>
 				</div>
@@ -91,8 +95,8 @@
 
 			<div class="crumb-wrap">
 			<div class="w">
-	 
- 
+
+
 
 			</div>
 		</div>
@@ -115,7 +119,7 @@
 
 						<div class="box-lh-one">
 							<ul>
- 
+
  								<li th:each="skuImage : ${skuInfo.skuImageList}">
 									<img src="/img/59ded62eN64a9784c.jpg" th:src="${skuImage.imgUrl}" />
 								</li>
@@ -124,8 +128,8 @@
 								<!--<li><img src="/img/59ded626N7c4cb0a3.jpg" /></li>-->
 								<!--<li><img src="/img/59ded626Ne3c69b70.jpg" /></li>-->
 								<!--<li><img src="/img/59ded62dN7e28abc5%20(1).jpg" /></li>-->
- 
-								 
+
+
 							</ul>
 						</div>
 						<div id="left">
@@ -139,7 +143,7 @@
 						<div class="boxx-one">
 							<ul>
 								<li>
-									 
+
 								</li>
 								<li>
 
@@ -152,7 +156,7 @@
 						<div class="box-name"  th:text="${skuInfo.skuName}">
 							华为 HUAWEI Mate 10 6GB+128GB 亮黑色 移动联通电信4G手机 双卡双待
 						</div>
- 
+
 						<div class="box-yuyue">
 							<div class="yuyue-one">
 								 热卖促销中
@@ -160,10 +164,10 @@
 							<div class="yuyue-two">
 								<ul>
 									<li>
-										 
+
 									</li>
 									<li>
-		 
+
 									</li>
 								</ul>
 							</div>
@@ -173,20 +177,20 @@
 								<li>惊喜价</li>
 								<li>
 									<span>￥</span>
-									<span>4499.00</span>
+									<span th:text="${skuInfo.price}">4499.00</span>
 								</li>
 								<li>
-								 
+
 								</li>
 								<li>
 									<a href="">
-										 
+
 									</a>
 								</li>
 							</ul>
 						</div>
 						<div class="box-wrap clear">
-							 
+
 						</div>
 
 						<div class="box-stock">
@@ -195,13 +199,13 @@
 								<li class="box-stock-li">
 									<div class="box-stock-one">
 									</div>
- 
+
 
 								</li>
 								<li>
 									<span>无货</span>， 此商品暂时售完
 								</li>
- 
+
 							</ul>
 						</div>
 						 <div class="box-stock">
@@ -210,16 +214,16 @@
 								<li class="box-stock-li">
 									<div class="box-stock-one">
 									</div>
- 
+
 
 								</li>
 								<li   >
 									  10 kg
 								</li>
- 
+
 							</ul>
 						</div>
-						  
+
 						<div class="box-attr-3">
 						<br/>
 							<!--隐藏域-->
@@ -270,8 +274,8 @@
 						<div class="box-btns clear">
 							<div class="box-btns-one">
 								<form id="itemForm" action="http://cart.gmall.com/addToCart" method="post">
-								<input type="text" name="num" id="" value="1" />
-								<input type="hidden" name="skuId"   />
+								<input type="text" name="skuNum" id="" value="1" />
+								<input type="hidden" name="skuId" th:value="${skuInfo.id}"  />
 
 								<div class="box-btns-one1">
 
@@ -293,15 +297,15 @@
 
 								 放入购物车
 
-							</div> 
+							</div>
 						</div>
 
-						 
+
 					</div>
 
 				</div>
 			</div>
-			 
+
 
 			<div class="ShopXiangqing">
 				<div class="allLeft">
@@ -399,7 +403,7 @@
 						</li>
 
 					</ul>
- 
+
 					<ul class="shopjieshaos posi" style="display: none;">
 						<li class="jieshoa" style="background: #e4393c;">
 							<a href="#li1" style="color: white;">商品介绍</a>
@@ -983,11 +987,11 @@
 			</div>
 		</div>
 		<!--厂家服务-->
-		 
+
 			<div class="lianBao">
-	 
+
 			</div>
- 
+
 		</div>
 
 
@@ -995,15 +999,15 @@
 							</li>
 							<!--评价-->
 							<li class="PINgjia actives" id="li4">
-								 
+
 						</ul>
 					</div>
 				</div>
 			</div>
 		</div>
 
- 
-			 
+
+
 		<div class="Fixedbian">
 			<ul>
 				<li class="li1"><a class="aaa" href="##">顶部</a></li>

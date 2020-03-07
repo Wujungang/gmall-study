@@ -18,7 +18,7 @@ public class SkuLsParams implements Serializable {
 
     int pageNo=1;
 
-    int pageSize=1;
+    int pageSize=20;
 
     public String getKeyword() {
         return keyword;

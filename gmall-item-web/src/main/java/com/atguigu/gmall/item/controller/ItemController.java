@@ -6,6 +6,8 @@ import com.alibaba.fastjson.JSON;
 import com.atguigu.gmall.bean.SkuInfo;
 import com.atguigu.gmall.bean.SkuSaleAttrValue;
 import com.atguigu.gmall.bean.SpuSaleAttr;
+import com.atguigu.gmall.config.LoginRequire;
+import com.atguigu.gmall0218.service.ListService;
 import com.atguigu.gmall0218.service.ManageService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,18 +23,14 @@ public class ItemController {
     @Reference
     private ManageService manageService;
 
-
-
+    @Reference
+    private ListService listService;
 
     // localhost:8084/33.html
     @RequestMapping("{skuId}.html")
+    @LoginRequire(autoRedirect = false) // 用户在访问商品详情的时候，必须登录！
     public String item(@PathVariable String skuId, HttpServletRequest request){
         SkuInfo skuInfo = manageService.getSkuInfo(skuId);
-
-
-
-
-
 
         List<SpuSaleAttr> spuSaleAttrList = manageService.getSpuSaleAttrListCheckBySku(skuInfo);
         System.out.println(spuSaleAttrList);
@@ -76,6 +74,8 @@ public class ItemController {
         // 保存json
         request.setAttribute("valuesSkuJson",valuesSkuJson);
         System.out.println(valuesSkuJson);
+
+        listService.incrHotScore(skuId);
         return "item";
 
     }

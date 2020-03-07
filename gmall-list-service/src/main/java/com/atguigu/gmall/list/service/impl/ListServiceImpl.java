@@ -4,11 +4,13 @@ import com.alibaba.dubbo.config.annotation.Service;
 import com.atguigu.gmall.bean.SkuLsInfo;
 import com.atguigu.gmall.bean.SkuLsParams;
 import com.atguigu.gmall.bean.SkuLsResult;
+import com.atguigu.gmall.config.RedisUtil;
 import com.atguigu.gmall0218.service.ListService;
 import io.searchbox.client.JestClient;
 import io.searchbox.core.Index;
 import io.searchbox.core.Search;
 import io.searchbox.core.SearchResult;
+import io.searchbox.core.Update;
 import io.searchbox.core.search.aggregation.MetricAggregation;
 import io.searchbox.core.search.aggregation.TermsAggregation;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -21,6 +23,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
+import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,6 +35,9 @@ public class ListServiceImpl implements ListService {
 
     @Autowired
     private JestClient jestClient;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
     public static final String ES_INDEX="gmall";
 
@@ -52,7 +58,7 @@ public class ListServiceImpl implements ListService {
 
     @Override
     public SkuLsResult search(SkuLsParams skuLsParams) {
-         /*
+        /*
             1.  定义dsl 语句
             2.  定义动作
             3.  执行动作
@@ -61,19 +67,51 @@ public class ListServiceImpl implements ListService {
         String query = makeQueryStringForSearch(skuLsParams);
 
         Search search = new Search.Builder(query).addIndex(ES_INDEX).addType(ES_TYPE).build();
-        SearchResult searchResult = null;
-
+        SearchResult searchResult =null;
         try {
             searchResult = jestClient.execute(search);
-            System.out.println("searchResult" + searchResult.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         SkuLsResult skuLsResult = makeResultForSearch(searchResult,skuLsParams);
 
         return skuLsResult;
     }
+
+    @Override
+    public void incrHotScore(String skuId) {
+        Jedis jedis = redisUtil.getJedis();
+
+        String hotKey = "hotScore";
+
+        Double zincrby = jedis.zincrby(hotKey, 1, "skuId" + skuId);
+        if(zincrby%10==0){
+            updateHotScore(skuId,Math.round(zincrby));
+        }
+    }
+
+    private void updateHotScore(String skuId, long round) {
+        /*
+        1.  编写dsl 语句
+        2.  定义动作
+        3.  执行
+         */
+        // POST /gmall/SkuInfo/3/_update
+        String upd="{\n" +
+                "  \"doc\": {\n" +
+                "     \"hotScore\": "+round+"\n" +
+                "  }\n" +
+                "}";
+        Update update = new Update.Builder(upd).index(ES_INDEX).type(ES_TYPE).id(skuId).build();
+
+        try {
+            jestClient.execute(update);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 设置返回结果
 
     /**
      *
@@ -127,6 +165,8 @@ public class ListServiceImpl implements ListService {
         skuLsResult.setAttrValueIdList(stringArrayList);
         return skuLsResult;
     }
+
+
     // 完全根据手写的dsl 语句！
     private String makeQueryStringForSearch(SkuLsParams skuLsParams) {
         // 定义一个查询器
