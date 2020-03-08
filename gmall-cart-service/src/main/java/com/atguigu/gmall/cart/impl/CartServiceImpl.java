@@ -184,7 +184,74 @@ public class CartServiceImpl implements CartService {
         return cartInfoList;
     }
 
-    private List<CartInfo> loadCartCache(String userId) {
+    @Override
+    public void checkCart(String skuId, String isChecked, String userId) {
+        /*
+            1.  获取Jedis 客户端
+            2.  获取购物车
+            3.  直接修改skuId 商品的勾选状态 isChecked
+            4.  写回购物车
+-------------------------------------------------------------------------
+            5.  新建一个购物车来存储勾选的商品！
+         */
+
+        // 获取jedis
+        Jedis jedis = redisUtil.getJedis();
+        // 定义购物车的key=user:userId:cart  用户key=user:userId:info
+        String cartKey = CartConst.USER_KEY_PREFIX+userId+CartConst.USER_CART_KEY_SUFFIX;
+
+        String cartInfoJson = jedis.hget(cartKey, skuId);
+        // 将其转换为对象
+        CartInfo cartInfo = JSON.parseObject(cartInfoJson, CartInfo.class);
+
+        cartInfo.setIsChecked(isChecked);
+
+        // 写回购物车
+        jedis.hset(cartKey,skuId,JSON.toJSONString(cartInfo));
+
+        // 新建一个购物车key user:userId:checked
+        String cartKeyChecked = CartConst.USER_KEY_PREFIX+userId+CartConst.USER_CHECKED_KEY_SUFFIX;
+        // isChecked=1 是勾选商品
+        if ("1".equals(isChecked)){
+            jedis.hset(cartKeyChecked,skuId,JSON.toJSONString(cartInfo));
+        }else {
+            // 删除被勾选的商品
+            jedis.hdel(cartKeyChecked,skuId);
+        }
+
+        jedis.close();
+    }
+
+    @Override
+    public List<CartInfo> getCartCheckedList(String userId) {
+        List<CartInfo> cartInfoList = new ArrayList<>();
+
+        // 获取被选中的购物车集合
+        /*
+            1. 获取Jedis
+            2. 定义key
+            3. 获取数据并返回！
+         */
+        // 获取jedis
+        Jedis jedis = redisUtil.getJedis();
+        // 被选中的购物车
+        String cartKeyChecked = CartConst.USER_KEY_PREFIX+userId+CartConst.USER_CHECKED_KEY_SUFFIX;
+
+        List<String> stringList = jedis.hvals(cartKeyChecked);
+        // 循环判断
+        if (stringList!=null && stringList.size()>0){
+            for (String cartJson : stringList) {
+                cartInfoList.add(JSON.parseObject(cartJson,CartInfo.class));
+            }
+
+        }
+
+        jedis.close();
+
+        return cartInfoList;
+    }
+
+    public List<CartInfo> loadCartCache(String userId) {
         // select * from cartInfo where userId = ? 不可取！查询不到实时价格！
         // cartInfo , skuInfo 从这两张表中查询！
         List<CartInfo> cartInfoList = cartInfoMapper.selectCartListWithCurPrice(userId);

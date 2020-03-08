@@ -24,4 +24,16 @@ public interface CartService {
      * @return
      */
     List<CartInfo> mergeToCartList(List<CartInfo> cartListCK, String userId);
+
+    /**
+     * 登录状态下.购物车勾选状态
+     * @param skuId
+     * @param isChecked
+     * @param userId
+     */
+    void checkCart(String skuId, String isChecked, String userId);
+
+    List<CartInfo> getCartCheckedList(String userId);
+
+    List<CartInfo> loadCartCache(String userId);
 }

@@ -99,4 +99,23 @@ public class CartCookieHandler {
 
         return null;
     }
+
+    public void deleteCartCookie(HttpServletRequest request, HttpServletResponse response) {
+        CookieUtil.deleteCookie(request,response,cookieCartName);
+    }
+
+    public void checkCart(HttpServletRequest request, HttpServletResponse response, String skuId, String isChecked) {
+        // 直接将isChecked 值赋给购物车集合
+        List<CartInfo> cartList = getCartList(request);
+        if (cartList!=null && cartList.size()>0){
+            for (CartInfo cartInfo : cartList) {
+                if (cartInfo.getSkuId().equals(skuId)){
+                    cartInfo.setIsChecked(isChecked);
+                }
+            }
+        }
+        // 购物车集合写回cookie
+        CookieUtil.setCookie(request,response,cookieCartName,JSON.toJSONString(cartList),COOKIE_CART_MAXAGE,true);
+    }
+
 }

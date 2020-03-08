@@ -11,6 +11,7 @@ import com.atguigu.gmall0218.service.ManageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,7 +63,7 @@ public class CartController {
 
     @RequestMapping("cartList")
     @LoginRequire(autoRedirect = false)
-    public String cartList(HttpServletRequest request){
+    public String cartList(HttpServletRequest request,HttpServletResponse response){
         // 获取userId
         String userId = (String) request.getAttribute("userId");
         List<CartInfo> cartInfoList = null;
@@ -72,6 +73,9 @@ public class CartController {
             if (cartListCK!=null && cartListCK.size()>0){
                 // 合并购物车
                 cartInfoList = cartService.mergeToCartList(cartListCK,userId);
+
+                //删除未登录购物车
+                cartCookieHandler.deleteCartCookie(request,response);
             }else {
                 // 登录状态下查询购物车
                 cartInfoList = cartService.getCartList(userId);
@@ -84,5 +88,43 @@ public class CartController {
         // 保存购物车集合
         request.setAttribute("cartInfoList",cartInfoList);
         return "cartList";
+    }
+
+    @RequestMapping("checkCart")
+    @LoginRequire(autoRedirect = false)
+    @ResponseBody
+    public void checkCart(HttpServletRequest request,HttpServletResponse response,String skuId){
+        // 获取页面传递过来的数据
+        System.out.println(skuId);
+        String isChecked = request.getParameter("isChecked");
+//        String skuId = request.getParameter("skuId");
+
+        String userId = (String) request.getAttribute("userId");
+
+        if (userId!=null){
+            // 登录状态
+            cartService.checkCart(skuId,isChecked,userId);
+        }else {
+            // 未登录
+            cartCookieHandler.checkCart(request,response,skuId,isChecked);
+        }
+    }
+
+    @RequestMapping("toTrade")
+    @LoginRequire
+    public String toTrade(HttpServletRequest request,HttpServletResponse response){
+        // 合并勾选的商品 未登录+登录
+        List<CartInfo> cartListCK = cartCookieHandler.getCartList(request);
+
+        String userId = (String) request.getAttribute("userId");
+        if (cartListCK!=null && cartListCK.size()>0){
+            // 合并
+            cartService.mergeToCartList(cartListCK,userId);
+            // 删除未登录数据
+            cartCookieHandler.deleteCartCookie(request,response);
+        }
+
+
+        return "redirect://order.gmall.com/trade";
     }
 }

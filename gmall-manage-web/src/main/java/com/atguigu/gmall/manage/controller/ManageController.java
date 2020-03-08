@@ -37,6 +37,9 @@ public class ManageController {
     }
 
 
+
+
+
     @RequestMapping("attrInfoList")
     public List<BaseAttrInfo> attrInfoList(String catalog3Id){
 
